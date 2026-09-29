@@ -30,12 +30,12 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
 
     - name: Upload APK
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: GLPI-Agent-APK
-        path: ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk
+        path: ${{ env.module_app }}/build/outputs/apk/release/${{ env.module_app }}-release.apk

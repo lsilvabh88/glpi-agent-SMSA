@@ -19,8 +19,18 @@ android {
         unitTests.returnDefaultValues = true
     }
 
+    signingConfigs {
+        release {
+            storeFile file("glpi-key.keystore")
+            storePassword "@@Wizard21"
+            keyAlias "glpialias"
+            keyPassword "@@Wizard21"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.txt'
             manifestPlaceholders = [crashlyticsEnabled: true]

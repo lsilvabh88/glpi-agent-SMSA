@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    compileSdk 36
+    compileSdk 34
     useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         applicationId "org.glpi.inventory.agent"
         minSdkVersion 21
-        targetSdkVersion 36
+        targetSdkVersion 34
 
         android.buildFeatures.buildConfig = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

@@ -1,18 +1,25 @@
-name: GLPI Android Inventory Library CI
+name: Build APK
 
 env:
   module_app: app
 
 on:
+  push:
+    branches:
+      - "main"
+      - "master"
   pull_request:
     branches:
       - "main"
+      - "master"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
     - name: set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -20,98 +27,15 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-
-    ##############################################
-    # Prepare / Build project APK / AAR / JAR    #
-    ##############################################
-    # Grant execute permission for gradlew
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    # Build app
-    - name: Build with Gradle
-      run: ./gradlew build
-    # Create APK For Firebase Instrumentation Tests
-    - name: Build Debug Test APK (for Firebase Test Lab)
-      run: ./gradlew assembleDebugAndroidTest
+      
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
 
-    - name: Setup build tool version variable
-      shell: bash
-      run: |
-        BUILD_TOOL_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
-        echo "BUILD_TOOL_VERSION=$BUILD_TOOL_VERSION" >> $GITHUB_ENV
-        echo Last build tool version is: $BUILD_TOOL_VERSION
-
-    #######################
-    # Sign Android APK    #
-    #######################
-    - name: Sign app APK
-      uses: r0adkll/sign-android-release@v1
-      # ID used to access action output
-      id: sign_app
-      with:
-        releaseDirectory: app/build/outputs/apk/release
-        signingKeyBase64: ${{ secrets.SIGN_APK_SIGNING_KEY }}
-        alias: ${{ secrets.SIGN_APK_ALIAS }}
-        keyStorePassword: ${{ secrets.SIGN_APP_STOREPASS }}
-        keyPassword: ${{ secrets.SIGN_APP_KEYPASS }}
-      env:
-        # override default build-tools version (29.0.3) -- optional
-        BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOL_VERSION }}
-
-    ################################################################################################
-    # Run Firebase Test Lab                                                                        #
-    # See : https://medium.com/firebase-developers/github-actions-firebase-test-lab-4bc830685a99   #
-    # See : https://github.com/google-github-actions/auth                                          #
-    # See : https://github.com/google-github-actions/setup-gcloud                                  #
-    ################################################################################################
-    # Login to Google using Firebase Admin SDK Service Agent Key
-    - id: 'auth'
-      name: Login to Google Cloud
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-
-    # Set up Cloud SDK
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v2'
-
-    # Set Firebase Project ID
-    - name: Set current project
-      run: gcloud config set project ${{ secrets.FIREBASE_PROJECT_ID }}
-
-    # Run Instrumentation Tests in Firebase Test Lab
-    # dm3q    Samasung galaxy s23     SDK 33
-    # e1q     Samasung galaxy s24     SDK 34
-    # bluejay Google Pixel 6a         SDK 32
-    # a51     Samsung  Galaxy A51     SDK 31
-    # q2q     Samsung Galaxy Z Fold3  SDK 30
-    # cactus  Xiaomi Redmi 6A         SDK 27
-    - name: Run Instrumentation Tests in Firebase Test Lab
-      run: |
-        gcloud firebase test android run --type instrumentation --app ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk --test ${{ env.module_app }}/build/outputs/apk/androidTest/debug/${{ env.module_app }}-debug-androidTest.apk --device model=e1q,version=34,locale=en,orientation=portrait
-        gcloud firebase test android run --type instrumentation --app ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk --test ${{ env.module_app }}/build/outputs/apk/androidTest/debug/${{ env.module_app }}-debug-androidTest.apk --device model=dm3q,version=33,locale=en,orientation=portrait
-        gcloud firebase test android run --type instrumentation --app ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk --test ${{ env.module_app }}/build/outputs/apk/androidTest/debug/${{ env.module_app }}-debug-androidTest.apk --device model=bluejay,version=32,locale=en,orientation=portrait
-        gcloud firebase test android run --type instrumentation --app ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk --test ${{ env.module_app }}/build/outputs/apk/androidTest/debug/${{ env.module_app }}-debug-androidTest.apk --device model=oriole,version=31,locale=en,orientation=portrait
-        gcloud firebase test android run --type instrumentation --app ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk --test ${{ env.module_app }}/build/outputs/apk/androidTest/debug/${{ env.module_app }}-debug-androidTest.apk --device model=redfin,version=30,locale=en,orientation=portrait
-
-
-
-    ########################
-    # Prepare release APK  #
-    ########################
-    - name: "Rename APK"
-      run: mv app/build/outputs/apk/release/app-release-unsigned-signed.apk app/build/outputs/apk/release/app.apk
-
-
-    ##########################################
-    # Upload Artifacts (APK / AAR / JAR)     #
-    ##########################################
-    # Upload APK
     - name: Upload APK
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: Bundle-APK
-        path: |
-          ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk
-          ${{ env.module_app }}/build/outputs/apk/release/app.apk
+        name: GLPI-Agent-APK
+        path: ${{ env.module_app }}/build/outputs/apk/debug/${{ env.module_app }}-debug.apk

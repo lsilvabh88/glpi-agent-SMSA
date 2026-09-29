@@ -65,6 +65,12 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:enabled="true" android:exported="true" android:name="org.glpi.inventory.agent.broadcast.RunInventoryReceiver">
+            <intent-filter>
+                <action android:name="org.glpi.inventory.agent.ACTION_RUN_NOW"/>
+            </intent-filter>
+        </receiver>
+
         <service android:name=".broadcast.InventoryJobScheduler"
             android:enabled="true"
             android:exported="false"

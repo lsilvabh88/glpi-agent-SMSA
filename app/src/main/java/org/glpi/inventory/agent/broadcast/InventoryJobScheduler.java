@@ -83,7 +83,13 @@ public class InventoryJobScheduler extends JobService {
             @Override
             public void run() {
                 AgentLog.d("GLPI-AGENT-JOBSCHEDULER : Run task" + Calendar.getInstance().getTime());
-                doInventory();
+                boolean forceRun = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (params.getExtras() != null) {
+                        forceRun = params.getExtras().getBoolean("forceRun", false);
+                    }
+                }
+                doInventory(forceRun);
                 jobFinished(params, true);
             }
         });
@@ -91,15 +97,17 @@ public class InventoryJobScheduler extends JobService {
         return true;
     }
 
-    private void doInventory() {
+    private void doInventory(boolean forceRun) {
         Context context = getApplicationContext();
         AgentLog.d("GLPI-AGENT-JOBSCHEDULER : Launch inventory from JobScheduler " + Calendar.getInstance().getTime());
 
         // check if autoStartInventory is deactivated
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (!sharedPreferences.getBoolean("autoStartInventory", false)) {
-            AgentLog.d("GLPI-AGENT-JOBSCHEDULER : The inventory will not be send, is deactivated");
-            return;
+        if (!forceRun) {
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (!sharedPreferences.getBoolean("autoStartInventory", false)) {
+                AgentLog.d("GLPI-AGENT-JOBSCHEDULER : The inventory will not be send, is deactivated");
+                return;
+            }
         }
 
         showPersistentNotification();
